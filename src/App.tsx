@@ -4,6 +4,7 @@ import { useAccount, useReadContract } from 'wagmi';
 import { ROLLUP_ABI } from './contract';
 import { useSettings } from './lib/settings';
 import { useRewardsScan } from './hooks/useRewardsScan';
+import { useTokenPrice } from './hooks/useTokenPrice';
 import { totalClaimable, totalClaimed, claimableEpochs } from './lib/scan';
 import { shortAddress } from './lib/format';
 import { ConnectWallet } from './components/ConnectWallet';
@@ -12,12 +13,14 @@ import { ScanProgress } from './components/ScanProgress';
 import { RewardsTable } from './components/RewardsTable';
 import { ClaimDock } from './components/ClaimDock';
 import { SettingsPanel } from './components/SettingsPanel';
+import { PriceTicker } from './components/PriceTicker';
 import { LogoMark, Search, Gear } from './components/icons';
 
 export function App() {
   const { address } = useAccount();
   const { settings } = useSettings();
   const { state, rows, meta, scan, restore, clearHistory, markClaimed } = useRewardsScan();
+  const { data: price } = useTokenPrice();
 
   const [proverInput, setProverInput] = useState<string>(settings.defaultProver);
   const [start, setStart] = useState('');
@@ -110,6 +113,7 @@ export function App() {
           </div>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <PriceTicker />
           <button className="btn btn-ghost" onClick={() => setSettingsOpen(true)} title="Connection settings">
             <Gear /> Settings
           </button>
@@ -123,6 +127,7 @@ export function App() {
         claimableTotal={claimable}
         claimableCount={claimableCount}
         claimedTotal={claimed}
+        price={price?.currentPrice}
       />
 
       {!proverValid && (

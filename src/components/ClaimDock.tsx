@@ -9,6 +9,8 @@ import type { Address } from 'viem';
 import { ROLLUP_ABI } from '../contract';
 import { useSettings } from '../lib/settings';
 import { formatToken } from '../lib/format';
+import { useTokenPrice } from '../hooks/useTokenPrice';
+import { usdValue, formatUsd } from '../lib/price';
 import { Bolt } from './icons';
 
 type Props = {
@@ -26,6 +28,7 @@ type Props = {
 export function ClaimDock({ prover, selectedEpochs, selectedTotal, onClaimed }: Props) {
   const { isConnected } = useAccount();
   const { settings } = useSettings();
+  const { data: price } = useTokenPrice();
   const { writeContract, data: hash, isPending, error, reset } = useWriteContract();
   const { isLoading: confirming, isSuccess } = useWaitForTransactionReceipt({ hash });
 
@@ -81,6 +84,9 @@ export function ClaimDock({ prover, selectedEpochs, selectedTotal, onClaimed }: 
                 <div className="k">Total Claim</div>
                 <div className="v lime">
                   {formatToken(selectedTotal, 4)} {settings.tokenSymbol}
+                  {price ? (
+                    <span className="dock-usd"> ≈ {formatUsd(usdValue(selectedTotal, price.currentPrice))}</span>
+                  ) : null}
                 </div>
               </div>
             </div>

@@ -602,6 +602,60 @@ tbody tr:last-child td {
   }
 }
 
+/* ---------- Price ticker ---------- */
+.ticker {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  height: 38px;
+  padding: 0 12px;
+  border: 1px solid var(--hair);
+  border-radius: var(--radius-sm);
+  background: var(--ink-2);
+  font-family: var(--font-mono);
+}
+.ticker-loading {
+  color: var(--fg-faint);
+  font-size: 12px;
+  letter-spacing: 0.04em;
+}
+.ticker-sym {
+  font-size: 10.5px;
+  letter-spacing: 0.14em;
+  color: var(--fg-faint);
+}
+.ticker-price {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--fg);
+  font-variant-numeric: tabular-nums;
+}
+.ticker svg {
+  display: block;
+  opacity: 0.9;
+}
+.ticker-chg {
+  font-size: 11px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.ticker-chg.up {
+  color: var(--lime);
+}
+.ticker-chg.down {
+  color: var(--red);
+}
+.dock-usd {
+  color: var(--fg-dim);
+  font-weight: 500;
+  font-size: 13px;
+}
+@media (max-width: 720px) {
+  .ticker {
+    display: none;
+  }
+}
+
 .address-chip {
   font-family: var(--font-mono);
   font-size: 12px;

@@ -1,4 +1,5 @@
 import { formatToken, formatInt, sharesToMultiplier } from '../lib/format';
+import { usdValue, formatUsd } from '../lib/price';
 import { useSettings } from '../lib/settings';
 
 type Props = {
@@ -7,12 +8,14 @@ type Props = {
   claimableTotal: bigint;
   claimableCount: number;
   claimedTotal: bigint;
+  price?: number;
 };
 
 /** Four instrument-style readouts across the top of the console. */
-export function StatCards({ currentEpoch, shares, claimableTotal, claimableCount, claimedTotal }: Props) {
+export function StatCards({ currentEpoch, shares, claimableTotal, claimableCount, claimedTotal, price }: Props) {
   const { settings } = useSettings();
   const symbol = settings.tokenSymbol;
+  const usd = (wei: bigint) => (price ? `≈ ${formatUsd(usdValue(wei, price))}` : undefined);
   return (
     <div className="stats">
       <div className="stat panel accent">
@@ -24,7 +27,9 @@ export function StatCards({ currentEpoch, shares, claimableTotal, claimableCount
           {formatToken(claimableTotal, 3)}
           <small>{symbol}</small>
         </div>
-        <div className="stat-sub">{claimableCount} unclaimed epochs</div>
+        <div className="stat-sub">
+          {claimableCount} unclaimed epochs{usd(claimableTotal) ? ` · ${usd(claimableTotal)}` : ''}
+        </div>
       </div>
 
       <div className="stat panel">
@@ -33,7 +38,7 @@ export function StatCards({ currentEpoch, shares, claimableTotal, claimableCount
           {formatToken(claimedTotal, 3)}
           <small>{symbol}</small>
         </div>
-        <div className="stat-sub">settled rewards</div>
+        <div className="stat-sub">{usd(claimedTotal) ?? 'settled rewards'}</div>
       </div>
 
       <div className="stat panel amber">
