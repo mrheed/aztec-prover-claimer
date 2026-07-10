@@ -36,7 +36,11 @@ export function RewardsTable({ rows, selected, scanned, meta, onToggle, onToggle
             </span>
           )}
           {rows.length > 0 && (
-            <button className="link-btn" onClick={onClear} title="Forget saved history for this prover">
+            <button
+              className="link-btn"
+              onClick={onClear}
+              title="Forget saved scan history for this prover — claimed rewards are kept permanently"
+            >
               Clear
             </button>
           )}

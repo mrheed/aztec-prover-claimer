@@ -13,6 +13,7 @@ import {
   mergeRows,
   clearRecord,
 } from '../lib/history';
+import { claimsKey, loadClaims, addClaims, applyClaims, entriesFromRows } from '../lib/claims';
 
 export type ScanState =
   | { phase: 'idle' }
@@ -49,39 +50,51 @@ export function useRewardsScan() {
     cancelRef.current = true;
   }, []);
 
-  // Restore a previously-saved ledger for a prover (no network). Returns true if found.
+  // Restore a previously-saved ledger for a prover (no network). Claimed rewards
+  // come back even without a scan record — the claims ledger is permanent.
   const restore = useCallback(
     (prover: Address): boolean => {
+      const claims = loadClaims(claimsKey(chainId, rollup, prover));
       const rec = loadRecord(historyKey(chainId, rollup, prover));
-      if (!rec) {
+      if (!rec && claims.length === 0) {
         setRows([]);
         setMeta(null);
         setState({ phase: 'idle' });
         return false;
       }
-      setRows(deserializeRows(rec.rows));
-      setMeta({ updatedAt: rec.updatedAt, start: rec.start, end: rec.end, restored: true });
-      setState({ phase: 'done', total: rec.rows.length });
+      const restored = applyClaims(rec ? deserializeRows(rec.rows) : [], claims);
+      setRows(restored);
+      setMeta({
+        updatedAt: rec?.updatedAt ?? Math.max(...claims.map((e) => e.claimedAt)),
+        start: rec?.start ?? 0,
+        end: rec?.end ?? 0,
+        restored: true,
+      });
+      setState({ phase: 'done', total: restored.length });
       return true;
     },
     [chainId, rollup],
   );
 
-  // Forget the saved ledger for a prover.
+  // Forget the saved scan ledger for a prover. Claimed rewards are permanent
+  // and survive the clear — only unclaimed scan rows are forgotten.
   const clearHistory = useCallback(
     (prover: Address) => {
       clearRecord(historyKey(chainId, rollup, prover));
-      setRows([]);
+      const claims = loadClaims(claimsKey(chainId, rollup, prover));
+      const kept = applyClaims([], claims);
+      setRows(kept);
       setMeta(null);
-      setState({ phase: 'idle' });
+      setState(kept.length > 0 ? { phase: 'done', total: kept.length } : { phase: 'idle' });
     },
     [chainId, rollup],
   );
 
   // Persist claimed status for specific epochs after a confirmed claim — without
   // a re-scan, and regardless of whether they fall in the last scanned range.
+  // Also records each claim in the permanent claims ledger (never deleted).
   const markClaimed = useCallback(
-    (prover: Address, epochs: number[]) => {
+    (prover: Address, epochs: number[], txHash?: string) => {
       if (epochs.length === 0) return;
       const key = historyKey(chainId, rollup, prover);
       const rec = loadRecord(key);
@@ -91,6 +104,11 @@ export function useRewardsScan() {
         const base = rec ? deserializeRows(rec.rows) : current;
         const updated = base.map((r) => (claimedSet.has(r.epoch) ? { ...r, claimed: true } : r));
         const updatedAt = Date.now();
+        addClaims(
+          claimsKey(chainId, rollup, prover),
+          { chainId, rollup, prover },
+          entriesFromRows(updated.filter((r) => claimedSet.has(r.epoch)), updatedAt, txHash),
+        );
         saveRecord(key, {
           chainId,
           rollup,
@@ -206,8 +224,20 @@ export function useRewardsScan() {
         // then persist the combined history.
         const key = historyKey(chainId, rollup, prover);
         const cached = loadRecord(key);
-        const merged = mergeRows(cached ? deserializeRows(cached.rows) : [], scanned, start, end);
         const updatedAt = Date.now();
+
+        // Harvest on-chain claimed epochs into the permanent claims ledger, then
+        // overlay the ledger — a claimed epoch never flips back or disappears,
+        // even if this scan's getHasClaimed read failed.
+        const claims = addClaims(
+          claimsKey(chainId, rollup, prover),
+          { chainId, rollup, prover },
+          entriesFromRows(scanned, updatedAt),
+        );
+        const merged = applyClaims(
+          mergeRows(cached ? deserializeRows(cached.rows) : [], scanned, start, end),
+          claims,
+        );
         saveRecord(key, {
           chainId,
           rollup,

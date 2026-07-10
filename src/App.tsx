@@ -183,9 +183,9 @@ export function App() {
         prover={prover}
         selectedEpochs={selectedEpochs}
         selectedTotal={selectedTotal}
-        onClaimed={() => {
-          // Persist claimed status for exactly the epochs just claimed, then clear selection.
-          markClaimed(prover, selectedEpochs);
+        onClaimed={(txHash) => {
+          // Record the claim permanently (with its tx hash), then clear selection.
+          markClaimed(prover, selectedEpochs, txHash);
           setSelected(new Set());
         }}
       />

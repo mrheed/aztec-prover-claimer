@@ -17,7 +17,7 @@ type Props = {
   prover: Address;
   selectedEpochs: number[];
   selectedTotal: bigint;
-  onClaimed: () => void;
+  onClaimed: (txHash: `0x${string}`) => void;
 };
 
 /**
@@ -38,7 +38,7 @@ export function ClaimDock({ prover, selectedEpochs, selectedTotal, onClaimed }: 
   useEffect(() => {
     if (isSuccess && hash && claimedHashRef.current !== hash) {
       claimedHashRef.current = hash;
-      onClaimed();
+      onClaimed(hash);
     }
   }, [isSuccess, hash, onClaimed]);
 
